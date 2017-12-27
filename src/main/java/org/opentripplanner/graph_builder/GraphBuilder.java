@@ -202,7 +202,6 @@ public class GraphBuilder implements Runnable {
         LOG.info(ReflectionLibrary.dumpFields(builderParams));
         File[] dataFiles = dir.listFiles();
         Arrays.sort(dataFiles);
-        LOG.info("Sorted data files {}", dataFiles);
         for (File file : dataFiles) {
             switch (InputFileType.forFile(file)) {
                 case GTFS:
