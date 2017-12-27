@@ -53,13 +53,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.Arrays;
 
 /**
  * This makes a Graph out of various inputs like GTFS and OSM.
  * It is modular: GraphBuilderModules are placed in a list and run in sequence.
  */
 public class GraphBuilder implements Runnable {
-    
+
     private static Logger LOG = LoggerFactory.getLogger(GraphBuilder.class);
 
     public static final String BUILDER_CONFIG_FILENAME = "build-config.json";
@@ -67,13 +68,13 @@ public class GraphBuilder implements Runnable {
     private List<GraphBuilderModule> _graphBuilderModules = new ArrayList<GraphBuilderModule>();
 
     private File graphFile;
-    
+
     private boolean _alwaysRebuild = true;
 
     private List<RoutingRequest> _modeList;
-    
+
     private String _baseGraph = null;
-    
+
     private Graph graph = new Graph();
 
     /** Should the graph be serialized to disk after being created or not? */
@@ -90,7 +91,7 @@ public class GraphBuilder implements Runnable {
     public void setAlwaysRebuild(boolean alwaysRebuild) {
         _alwaysRebuild = alwaysRebuild;
     }
-    
+
     public void setBaseGraph(String baseGraph) {
         this._baseGraph = baseGraph;
         try {
@@ -107,11 +108,11 @@ public class GraphBuilder implements Runnable {
     public void setModes(List<RoutingRequest> modeList) {
         _modeList = modeList;
     }
-    
+
     public void setPath (String path) {
         graphFile = new File(path.concat("/Graph.obj"));
     }
-    
+
     public void setPath (File path) {
         graphFile = new File(path, "Graph.obj");
     }
@@ -125,7 +126,7 @@ public class GraphBuilder implements Runnable {
         long startTime = System.currentTimeMillis();
 
         if (serializeGraph) {
-        	
+
             if (graphFile == null) {
                 throw new RuntimeException("graphBuilderTask has no attribute graphFile.");
             }
@@ -134,7 +135,7 @@ public class GraphBuilder implements Runnable {
                 LOG.info("graph already exists and alwaysRebuild=false => skipping graph build");
                 return;
             }
-        	
+
             try {
                 if (!graphFile.getParentFile().exists()) {
                     if (!graphFile.getParentFile().mkdirs()) {
@@ -151,7 +152,7 @@ public class GraphBuilder implements Runnable {
         for (GraphBuilderModule builder : _graphBuilderModules) {
             builder.checkInputs();
         }
-        
+
         HashMap<Class<?>, Object> extra = new HashMap<Class<?>, Object>();
         for (GraphBuilderModule load : _graphBuilderModules)
             load.buildGraph(graph, extra);
@@ -199,7 +200,10 @@ public class GraphBuilder implements Runnable {
         // Load the router config JSON to fail fast, but we will only apply it later when a router starts up
         routerConfig = OTPMain.loadJson(new File(dir, Router.ROUTER_CONFIG_FILENAME));
         LOG.info(ReflectionLibrary.dumpFields(builderParams));
-        for (File file : dir.listFiles()) {
+        File[] dataFiles = dir.listFiles();
+        Arrays.sort(dataFiles);
+        LOG.info("Sorted data files {}", dataFiles);
+        for (File file : dataFiles) {
             switch (InputFileType.forFile(file)) {
                 case GTFS:
                     LOG.info("Found GTFS file {}", file);
